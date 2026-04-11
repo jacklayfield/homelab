@@ -1,0 +1,10 @@
+#!/bin/bash
+
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health)
+
+if [ "$STATUS" -eq 200 ]; then
+  echo "Service is healthy"
+else
+  echo "Service is NOT healthy"
+  exit 1
+fi
