@@ -2,11 +2,16 @@ version: '3.8'
 
 services:
   web:
-    image: nginx:latest
-    container_name: ${CONTAINER_NAME}
+    build: ../app
+    container_name: homelab-nginx
     ports:
       - "127.0.0.1:${NGINX_PORT}:80"
-    volumes:
-      - ../app:/usr/share/nginx/html:ro
-      - ../config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    image: hashicorp/http-echo
+    container_name: homelab-api
+    command: [ "-text=hello from api" ]
     restart: unless-stopped
