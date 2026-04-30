@@ -1,0 +1,29 @@
+version: '3'
+
+tasks:
+  deploy:
+    desc: Apply Kubernetes manifests
+    cmds:
+      - kubectl apply -f kubernetes/
+
+  destroy:
+    desc: Delete all resources
+    cmds:
+      - kubectl delete -f kubernetes/
+
+  pods:
+    cmds:
+      - kubectl get pods
+
+  ingress:
+    cmds:
+      - kubectl get ingress
+
+  monitor:
+    desc: Install monitoring stack
+    cmds:
+      - ./scripts/install-monitoring.sh
+
+  grafana:
+    cmds:
+      - kubectl port-forward svc/monitoring-grafana 3000:80
