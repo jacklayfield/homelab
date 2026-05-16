@@ -1,0 +1,95 @@
+# Default values for homelab
+replicaCount: 3
+
+image:
+  web:
+    repository: ghcr.io/jacklayfield/homelab-web
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  api:
+    repository: hashicorp/http-echo
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+web:
+  service:
+    type: ClusterIP
+    port: 80
+  replicas: 3
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 128Mi
+  healthCheck:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+api:
+  service:
+    type: ClusterIP
+    port: 5678
+  replicas: 2
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  message: "hello from api"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: "homelab.local"
+      paths:
+        - path: /
+          pathType: Prefix
+        - path: /api
+          pathType: Prefix
+  tls:
+    - secretName: homelab-tls
+      hosts:
+        - homelab.local
+
+monitoring:
+  enabled: true
+  prometheusUrl: http://prometheus:9090
+  grafanaUrl: http://grafana:3000
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

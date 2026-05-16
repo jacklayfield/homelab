@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "homelab.fullname" . }}-web
+  labels:
+    {{- include "homelab.labels" . | nindent 4 }}
+    component: web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      {{- include "homelab.selectorLabels" . | nindent 6 }}
+      component: web
+  template:
+    metadata:
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+      labels:
+        {{- include "homelab.selectorLabels" . | nindent 8 }}
+        component: web
+    spec:
+      serviceAccountName: {{ include "homelab.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: web
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.web.repository }}:{{ .Values.image.web.tag }}"
+          imagePullPolicy: {{ .Values.image.web.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          {{- if .Values.web.healthCheck.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.web.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.web.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.healthCheck.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.web.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.web.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.web.healthCheck.periodSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

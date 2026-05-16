@@ -13,20 +13,19 @@ spec:
         app: homelab-web
     spec:
       containers:
-        containers:
-          - name: web
-            image: ghcr.io/jacklayfield/homelab-web:latest
-            ports:
-              - containerPort: 80
-            readinessProbe:
-              httpGet:
-                path: /health
-                port: 80
-              initialDelaySeconds: 5
-              periodSeconds: 5
-            livenessProbe:
-              httpGet:
-                path: /health
-                port: 80
-              initialDelaySeconds: 10
-              periodSeconds: 10
+        - name: web
+          image: ghcr.io/jacklayfield/homelab-web:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
