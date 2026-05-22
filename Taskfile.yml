@@ -1,29 +1,204 @@
 version: '3'
 
 tasks:
-  deploy:
-    desc: Apply Kubernetes manifests
+  # Helm deployment tasks
+  helm:install:
+    desc: Install homelab Helm chart
     cmds:
-      - kubectl apply -f kubernetes/
+      - helm install homelab ./homelab-chart --namespace default --create-namespace
 
-  destroy:
-    desc: Delete all resources
+  helm:upgrade:
+    desc: Upgrade homelab Helm chart
     cmds:
-      - kubectl delete -f kubernetes/
+      - helm upgrade homelab ./homelab-chart --namespace default
+
+  helm:uninstall:
+    desc: Uninstall homelab Helm chart
+    cmds:
+      - helm uninstall homelab --namespace default
+
+  helm:values:
+    desc: Show current Helm values
+    cmds:
+      - helm get values homelab --namespace default
+
+  helm:template:
+    desc: Preview Helm template rendering
+    cmds:
+      - helm template homelab ./homelab-chart
+
+  # Monitoring stack tasks
+  monitor:install:
+    desc: Install monitoring stack (Prometheus + Grafana)
+    cmds:
+      - kubectl apply -f monitoring/namespace.yaml
+      - kubectl apply -f monitoring/prometheus/
+      - kubectl apply -f monitoring/grafana/
+      - echo "Monitoring stack deployed to 'monitoring' namespace"
+
+  monitor:uninstall:
+    desc: Remove monitoring stack
+    cmds:
+      - kubectl delete -f monitoring/
+
+  monitor:prometheus:
+    desc: Port-forward to Prometheus (http://localhost:9090)
+    cmds:
+      - kubectl port-forward -n monitoring svc/prometheus 9090:9090
+
+  monitor:grafana:
+    desc: Port-forward to Grafana (http://localhost:3000)
+    cmds:
+      - kubectl port-forward -n monitoring svc/grafana 3000:3000
+
+  # Kubernetes status tasks
+  status:
+    desc: Show overall cluster status
+    cmds:
+      - kubectl get pods -A
+      - echo "---"
+      - kubectl get svc -A
+      - echo "---"
+      - kubectl get ingress -A
 
   pods:
+    desc: List all pods
+    cmds:
+      - kubectl get pods -A
+
+  pods:default:
+    desc: List pods in default namespace
     cmds:
       - kubectl get pods
 
+  pods:monitoring:
+    desc: List monitoring namespace pods
+    cmds:
+      - kubectl get pods -n monitoring
+
+  svc:
+    desc: List all services
+    cmds:
+      - kubectl get svc -A
+
   ingress:
+    desc: List all ingresses
     cmds:
-      - kubectl get ingress
+      - kubectl get ingress -A
 
-  monitor:
-    desc: Install monitoring stack
+  logs:app:
+    desc: Tail application logs
     cmds:
-      - ./scripts/install-monitoring.sh
+      - kubectl logs -f deployment/homelab-web
 
-  grafana:
+  logs:api:
+    desc: Tail API logs
     cmds:
-      - kubectl port-forward svc/monitoring-grafana 3000:80
+      - kubectl logs -f deployment/homelab-api
+
+  logs:prometheus:
+    desc: Tail Prometheus logs
+    cmds:
+      - kubectl logs -f -n monitoring deployment/prometheus
+
+  logs:grafana:
+    desc: Tail Grafana logs
+    cmds:
+      - kubectl logs -f -n monitoring deployment/grafana
+
+  # Deployment tasks
+  deploy:
+    desc: Deploy application with Helm
+    cmds:
+      - task: helm:upgrade
+      - echo "Application deployed"
+
+  deploy:all:
+    desc: Deploy monitoring stack and application
+    cmds:
+      - task: monitor:install
+      - task: deploy
+      - echo "Full deployment complete"
+
+  # Cleanup tasks
+  destroy:
+    desc: Delete all resources (app + monitoring)
+    cmds:
+      - task: helm:uninstall
+      - task: monitor:uninstall
+      - echo "All resources destroyed"
+
+  # Port forwarding shortcuts
+  forward:grafana:
+    desc: Forward Grafana port (default: 3000:3000)
+    cmds:
+      - kubectl port-forward -n monitoring svc/grafana 3000:3000
+
+  forward:prometheus:
+    desc: Forward Prometheus port (default: 9090:9090)
+    cmds:
+      - kubectl port-forward -n monitoring svc/prometheus 9090:9090
+
+  forward:app:
+    desc: Forward app service port (default: 8080:80)
+    cmds:
+      - kubectl port-forward svc/homelab-web 8080:80
+
+  # Development helpers
+  health:
+    desc: Check health of all deployments
+    cmds:
+      - |
+        echo "=== Default Namespace ==="
+        kubectl get deployment -o wide
+        echo "=== Monitoring Namespace ==="
+        kubectl get deployment -n monitoring -o wide
+
+  events:
+    desc: Show recent cluster events
+    cmds:
+      - kubectl get events -A --sort-by='.lastTimestamp'
+
+  describe:app:
+    desc: Describe app deployment
+    cmds:
+      - kubectl describe deployment homelab-web
+
+  describe:api:
+    desc: Describe API deployment
+    cmds:
+      - kubectl describe deployment homelab-api
+
+  describe:prometheus:
+    desc: Describe Prometheus deployment
+    cmds:
+      - kubectl describe deployment -n monitoring prometheus
+
+  describe:grafana:
+    desc: Describe Grafana deployment
+    cmds:
+      - kubectl describe deployment -n monitoring grafana
+
+  # Utility tasks
+  lint:helm:
+    desc: Lint Helm chart
+    cmds:
+      - helm lint ./homelab-chart
+
+  validate:manifests:
+    desc: Validate Kubernetes manifests
+    cmds:
+      - kubectl apply -f kubernetes/ --dry-run=client
+      - kubectl apply -f monitoring/ --dry-run=client
+
+  clean:
+    desc: Clean up temporary files
+    cmds:
+      - find . -name "*.tmp" -delete
+      - find . -name ".DS_Store" -delete
+      - echo "Cleanup complete"
+
+  help:
+    desc: Show available tasks
+    cmds:
+      - task --list-all

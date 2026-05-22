@@ -1,0 +1,50 @@
+name: Lint & Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+
+      - name: Lint Helm chart
+        run: helm lint ./homelab-chart
+
+      - name: Template Helm chart
+        run: helm template homelab ./homelab-chart
+
+  lint-kubernetes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubeconform
+        run: |
+          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform-linux-amd64.tar.gz
+
+      - name: Validate Kubernetes manifests
+        run: |
+          ./kubeconform -d kubernetes/ -d monitoring/
+
+  lint-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3
+        with:
+          dockerfile: app/Dockerfile
+          ignore: DL3008,DL3009

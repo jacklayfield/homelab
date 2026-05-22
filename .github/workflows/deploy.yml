@@ -1,0 +1,74 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'homelab-chart/**'
+      - 'kubernetes/**'
+      - '.github/workflows/deploy.yml'
+  workflow_run:
+    workflows: ["Build & Push Docker Image"]
+    types:
+      - completed
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-web
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.27.0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.0
+
+      - name: Configure kubectl context
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+        if: secrets.KUBE_CONFIG != ''
+
+      - name: Deploy monitoring stack
+        if: github.event_name == 'push'
+        run: |
+          kubectl apply -f monitoring/namespace.yaml
+          kubectl apply -f monitoring/prometheus/
+          kubectl apply -f monitoring/grafana/
+
+      - name: Deploy application with Helm
+        if: github.event_name == 'push'
+        run: |
+          helm upgrade --install homelab ./homelab-chart \
+            --namespace default \
+            --set image.web.tag=${{ github.sha }} \
+            --wait
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/homelab-web -n default
+          kubectl rollout status deployment/homelab-api -n default
+
+      - name: Post deployment info
+        if: always()
+        run: |
+          echo "=== Deployment Info ==="
+          kubectl get pods -A
+          kubectl get svc -A
+          kubectl get ingress -A
