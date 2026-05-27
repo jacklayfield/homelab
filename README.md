@@ -17,25 +17,25 @@ This is a comprehensive platform designed to mirror production-like infrastructu
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    KUBERNETES CLUSTER                        │
+│                    KUBERNETES CLUSTER                       │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────┐              ┌──────────────────┐    │
-│  │   INGRESS/NGINX  │              │    MONITORING    │    │
-│  │   (Routing)      │              │   NAMESPACE      │    │
-│  └────────┬─────────┘              └────────┬─────────┘    │
-│           │                                  │               │
-│  ┌────────▼──────────────────────┐  ┌──────▼──────────┐    │
-│  │   DEFAULT NAMESPACE            │  │  PROMETHEUS    │    │
-│  ├────────────────────────────────┤  │  (Scraping)    │    │
-│  │                                │  └────────┬───────┘    │
-│  │ ┌─────────────┐  ┌──────────┐ │           │             │
-│  │ │ Web Service │  │API Service│ │  ┌──────▼──────────┐   │
-│  │ │ (3 replicas)│  │(2 replicas)│ │  │  GRAFANA       │   │
-│  │ └─────────────┘  └──────────┘ │  │  (Dashboards)  │   │
-│  │                                │  └────────────────┘    │
+│                                                             │
+│  ┌──────────────────┐              ┌──────────────────┐     │
+│  │   INGRESS/NGINX  │              │    MONITORING    │     │
+│  │    (Routing)     │              │    NAMESPACE     │     │
+│  └────────┬─────────┘              └────────┬─────────┘     │
+│           │                                 │               │
+│  ┌────────▼───────────────────────┐  ┌──────▼─────────┐     │
+│  │        DEFAULT NAMESPACE       │  │  PROMETHEUS    │     │
+│  ├────────────────────────────────┤  │  (Scraping)    │     │
+│  │                                │  └────────┬───────┘     │
+│  │ ┌─────────────┐  ┌───────────┐ │           │             │
+│  │ │ Web Service │  │API Service│ │  ┌────────▼───────┐     │
+│  │ │ (3 replicas)│  │(2 replicas) │  │  │GRAFANA      │     │
+│  │ └─────────────┘  └───────────┘ │  │  (Dashboards)  │     │
+│  │                                │  └────────────────┘     │
 │  └────────────────────────────────┘                         │
-│                                                              │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
                            │
                 ┌──────────┴──────────┐
@@ -44,7 +44,6 @@ This is a comprehensive platform designed to mirror production-like infrastructu
             │Browser│            │Metrics│
             └───────┘            └───────┘
 ```
-
 ---
 
 ## Prerequisites
@@ -518,14 +517,14 @@ api:
 
 This is a **local homelab setup**. For production:
 
-- ✅ Use managed Kubernetes (EKS, AKS, GKE)
-- ✅ Configure persistent volumes (not emptyDir)
-- ✅ Set resource quotas and network policies
-- ✅ Enable RBAC and pod security policies
-- ✅ Use sealed secrets for sensitive data
-- ✅ Configure TLS/SSL certificates
-- ✅ Set up log aggregation (ELK, Loki)
-- ✅ Implement GitOps (ArgoCD, Flux)
+- Use managed Kubernetes (EKS, AKS, GKE)
+- Configure persistent volumes (not emptyDir)
+- Set resource quotas and network policies
+- Enable RBAC and pod security policies
+- Use sealed secrets for sensitive data
+- Configure TLS/SSL certificates
+- Set up log aggregation (ELK, Loki)
+- Implement GitOps (ArgoCD, Flux)
 
 ---
 

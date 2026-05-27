@@ -90,6 +90,7 @@ spec:
           configMap:
             name: grafana-dashboards
         - name: dashboards
-          emptyDir: {}
+          configMap:
+            name: grafana-dashboard-files
         - name: tmp
           emptyDir: {}
