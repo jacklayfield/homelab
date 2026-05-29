@@ -51,9 +51,27 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: web-cache
+              mountPath: /var/cache/nginx
+            - name: web-run
+              mountPath: /var/run/nginx
+            - name: web-run-root
+              mountPath: /run
+            - name: web-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: web-cache
+          emptyDir: {}
+        - name: web-run
+          emptyDir: {}
+        - name: web-run-root
+          emptyDir: {}
+        - name: web-config
+          configMap:
+            name: {{ include "homelab.fullname" . }}-web-config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
