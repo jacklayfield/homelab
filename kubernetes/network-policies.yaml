@@ -1,0 +1,150 @@
+---
+# Default namespace - DEFAULT DENY all ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Allow ingress from NGINX ingress controller to web service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-web
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      component: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+---
+# Allow ingress from NGINX ingress controller to API service
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-api
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      component: api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+# Allow web to communicate with API (if needed)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-to-api
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      component: api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          component: web
+    ports:
+    - protocol: TCP
+      port: 8080
+---
+# Allow Prometheus to scrape metrics from all pods in default namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: default
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 80
+---
+# Monitoring namespace - DEFAULT DENY all ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-default-deny
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# Allow port-forward/localhost to Prometheus and Grafana
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-access
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 3000
+---
+# Allow Prometheus to scrape Kubernetes API
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-kubernetes-api
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      component: kube-apiserver
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 443
