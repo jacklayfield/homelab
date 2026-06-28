@@ -81,9 +81,10 @@ ingress:
         - path: /api
           pathType: Prefix
   tls:
-    - secretName: homelab-tls
-      hosts:
-        - homelab.local
+    enabled: true
+    secretName: homelab-tls
+    hosts:
+      - homelab.local
 
 monitoring:
   enabled: true

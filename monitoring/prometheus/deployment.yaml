@@ -75,6 +75,7 @@ spec:
           configMap:
             name: prometheus-rules
         - name: storage
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: prometheus-storage
         - name: tmp
           emptyDir: {}

@@ -51,7 +51,49 @@ tasks:
     cmds:
       - kubectl port-forward -n monitoring svc/grafana 3000:3000
 
-  # Kubernetes status tasks
+  robust:storage:
+    desc: Deploy persistent storage infrastructure
+    cmds:
+      - kubectl apply -f kubernetes/storage-class.yaml
+      - echo "Storage infrastructure deployed"
+      - kubectl get storageclass,pv -o wide
+
+  robust:network-policies:
+    desc: Deploy network security policies
+    cmds:
+      - kubectl apply -f kubernetes/network-policies.yaml
+      - echo "Network policies deployed"
+      - kubectl get networkpolicies -A
+
+  robust:tls:
+    desc: Generate self-signed TLS certificate and create secret
+    cmds:
+      - |
+        if ! command -v openssl &> /dev/null; then
+          echo "Error: openssl is required. Install it and try again."
+          exit 1
+        fi
+        echo "Generating self-signed certificate..."
+        openssl req -x509 -newkey rsa:4096 -keyout tls.key -out tls.crt -days 365 -nodes -subj "/CN=homelab.local"
+        echo "Certificate generated (tls.crt, tls.key)"
+        echo "Creating Kubernetes secret..."
+        kubectl create secret tls homelab-tls --cert=tls.crt --key=tls.key --namespace default --dry-run=client -o yaml | kubectl apply -f -
+        echo "TLS secret created"
+        kubectl get secrets homelab-tls -o jsonpath='{.metadata.namespace}/{.metadata.name}'
+        echo ""
+
+  robust:all:
+    desc: Deploy all robustness features (storage, network policies, TLS)
+    cmds:
+      - task: robust:storage
+      - echo ""
+      - task: robust:network-policies
+      - echo ""
+      - task: robust:tls
+      - echo ""
+      - echo "✓ All robustness features deployed!"
+
+
   status:
     desc: Show overall cluster status
     cmds:
@@ -114,11 +156,18 @@ tasks:
       - echo "Application deployed"
 
   deploy:all:
-    desc: Deploy monitoring stack and application
+    desc: Deploy everything - robustness features + monitoring + application
     cmds:
+      - echo "Deploying robustness features..."
+      - task: robust:all
+      - echo ""
+      - echo "Deploying monitoring stack..."
       - task: monitor:install
+      - echo ""
+      - echo "Deploying application..."
       - task: deploy
-      - echo "Full deployment complete"
+      - echo ""
+      - echo "✓ Full deployment complete!"
 
   # Cleanup tasks
   destroy:
@@ -180,6 +229,22 @@ tasks:
       - kubectl describe deployment -n monitoring grafana
 
   # Utility tasks
+  robust:verify:
+    desc: Verify robustness features are working
+    cmds:
+      - echo "=== Storage Status ==="
+      - kubectl get pvc -A
+      - echo ""
+      - echo "=== Network Policies ==="
+      - kubectl get networkpolicies -A
+      - echo ""
+      - echo "=== TLS Secret ==="
+      - kubectl get secrets homelab-tls -o jsonpath='{.metadata.namespace}/{.metadata.name}' 2>/dev/null || echo "TLS secret not found"
+      - echo ""
+      - echo "=== Ingress TLS Status ==="
+      - kubectl get ingress -o jsonpath='{.items[*].spec.tls}' 2>/dev/null || echo "No TLS configured"
+      - echo ""
+
   lint:helm:
     desc: Lint Helm chart
     cmds:
