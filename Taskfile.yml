@@ -51,6 +51,25 @@ tasks:
     cmds:
       - kubectl port-forward -n monitoring svc/grafana 3000:3000
 
+  openlens:install:
+    desc: Install OpenLens dashboard
+    cmds:
+      - helm repo add openlens https://helm.openlens.org
+      - helm repo update
+      - kubectl create namespace openlens --dry-run=client -o yaml | kubectl apply -f -
+      - helm upgrade --install openlens openlens/openlens --namespace openlens --create-namespace
+
+  openlens:uninstall:
+    desc: Remove OpenLens dashboard
+    cmds:
+      - helm uninstall openlens --namespace openlens --ignore-not-found
+      - kubectl delete namespace openlens --ignore-not-found=true
+
+  openlens:forward:
+    desc: Port-forward OpenLens (http://localhost:3000)
+    cmds:
+      - kubectl -n openlens port-forward svc/openlens 3000:80
+
   robust:storage:
     desc: Deploy persistent storage infrastructure
     cmds:
